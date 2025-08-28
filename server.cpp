@@ -43,13 +43,66 @@ class Session : public enable_shared_from_this<Session> {
 					return;
 				}
 
-				cout << "successfully read the request header" << self->req_.method_string() << endl;
-
-				beast::error_code error;
-				self->socket_.shutdown(tcp::socket::shutdown_both , error);
+				cout << "successfully read the request header" << self->req_.method_string() <<" " << self->req_.target() << endl;
+				self->handle_request();
 			});
 		}
 
+
+		void handle_request()
+		{
+				try{
+					
+					string target = req_.target().to_string();
+
+					if(target == "/")
+					{
+						target = "/index.html";
+					}
+
+					if(target == "POST /upload")
+					{
+						handle_upload_request();
+					}
+
+					full_path = "./www" + target;
+
+					handle_regular_request(full_path);
+
+				}catch(const exception& e){
+
+					cerr << "Exception in handle_request: " << e.what() << endl;
+					send_bad_response(http::status::internal_server_error, "Internal Server Error");
+				}
+		}
+
+
+		void handle_regular_request()
+		{
+			
+		}
+
+		void send_bad_response(http::status status , string_view error_message )
+		{
+			//  capturing the response as a shared pointer to extend its lifetime
+			auto res = make_shared<http::response<http::string_body>>();
+
+			res->version(req_.version());
+			res->result(status);
+			res->set(http::field::server , "Beast");
+			res->set(http::field::content_type , "text/html");
+			res->body() = string(error_message);
+			res->prepare_payload();
+
+			http::async_write(socket_ , *res , [self = shared_from_this() , res](beast:: error_code ec , size_t bytes_transferred){
+				if(ec){
+					cerr << "Error sending response: " << ec.message() << endl;
+				}
+
+				self->socket_.shutdown(tcp::socket::shutdown_send , ec);
+			});
+
+		}
 };
 
 
