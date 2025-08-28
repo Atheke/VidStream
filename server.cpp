@@ -77,8 +77,33 @@ class Session : public enable_shared_from_this<Session> {
 		}
 
 
-		void handle_regular_request()
+		void handle_regular_request(string full_path)
 		{
+			try{
+				auto res = make_shared<http::response<http::string_body>>();				
+				auto body = read_file(full_path);
+
+				res->version(req_.version());
+				res->result(http::status::ok);
+				res->set(http::field::server, "Beast");
+				res->set(http::field::content_type, mime_type(full_path));
+				res->body() = move(body);
+				res->prepare_payload();
+
+				async_write(socket_ , *res , [self = shared_from_this() , res](beast:: error_code ec , size_t bytes_transferred){
+						
+					if(ec)
+					{
+						cerr << "Error sending response: " << ec.message() << endl;
+					}
+
+					self->socket_.shutdown(tcp::socket::shutdown_send , ec);
+				});
+
+			}catch(...){
+				send_bad_response(http::status::not_found, "File Not Found");
+				return;
+			}
 			
 		}
 
@@ -105,6 +130,45 @@ class Session : public enable_shared_from_this<Session> {
 		}
 };
 
+
+string mime_type(string path)
+{
+	static const unordered_map<string, string> mime_map = {
+        {".html", "text/html"},
+        {".css", "text/css"},
+        {".js", "application/javascript"},
+        {".png", "image/png"},
+        {".jpg", "image/jpeg"},
+        {".gif", "image/gif"},
+        {".txt", "text/plain"},
+        {".mp4", "video/mp4"},
+				{".m3u8" , "application/vnd.apple.mpegurl"},
+				{".ts","video/mp2t"},
+    };
+
+		auto dot_position = path.substr(path.find_last_of('.'));
+		if(dot_position == string::npos)
+		{
+			return "application/octet-stream";
+		}
+		string extension = path.substr(dot_position);
+		auto it = mime_map.find(extension);
+		if(it != mime_map.end())
+		{
+			return it->second;
+		}
+}
+
+
+string read_file(const string& path)
+{
+	ifstream file(path , ios::binary);
+	if(!file)
+	{
+		throw runtime_error("File not found");
+	}
+	return string((istreambuf_iterator<char>file) , istreambuf_iterator<char>());
+}
 
 int main()
 {
