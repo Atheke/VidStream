@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Server Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .metric-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .quality-btn {
+            transition: all 0.2s ease;
+        }
+        .quality-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen text-gray-100 p-4 md:p-6">
+    <div class="container mx-auto max-w-6xl">
+        <header class="flex flex-col md:flex-row justify-between items-center py-5 mb-8 border-b border-gray-700">
+            <div class="logo flex items-center gap-3 mb-4 md:mb-0">
+                <i class="fas fa-server text-2xl text-cyan-400"></i>
+                <h1 class="text-xl md:text-2xl font-bold">Video Server Analytics</h1>
+            </div>
+            <div class="status-indicator flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full">
+                <div class="status-dot w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span class="text-sm">Server Online</span>
+            </div>
+        </header>
+        
+        <div class="metrics grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="metric-card rounded-xl p-4 text-center">
+                <div class="metric-label text-gray-400 text-sm">Throughput</div>
+                <div class="metric-value text-2xl font-bold text-cyan-400 my-2">4.2 <span class="text-sm">Mbps</span></div>
+                <div class="metric-trend text-green-400 text-xs">
+                    <i class="fas fa-arrow-up"></i> 12% from last hour
+                </div>
+            </div>
+            <div class="metric-card rounded-xl p-4 text-center">
+                <div class="metric-label text-gray-400 text-sm">Latency</div>
+                <div class="metric-value text-2xl font-bold text-cyan-400 my-2">128 <span class="text-sm">ms</span></div>
+                <div class="metric-trend text-green-400 text-xs">
+                    <i class="fas fa-arrow-down"></i> 8% from last hour
+                </div>
+            </div>
+            <div class="metric-card rounded-xl p-4 text-center">
+                <div class="metric-label text-gray-400 text-sm">Error Rate</div>
+                <div class="metric-value text-2xl font-bold text-cyan-400 my-2">0.2 <span class="text-sm">%</span></div>
+                <div class="metric-trend text-green-400 text-xs">
+                    <i class="fas fa-arrow-down"></i> 3% from last hour
+                </div>
+            </div>
+            <div class="metric-card rounded-xl p-4 text-center">
+                <div class="metric-label text-gray-400 text-sm">Active Streams</div>
+                <div class="metric-value text-2xl font-bold text-cyan-400 my-2">42</div>
+                <div class="metric-trend text-green-400 text-xs">
+                    <i class="fas fa-arrow-up"></i> 5 from last hour
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Performance Metrics Card -->
+            <div class="metric-card rounded-xl p-5">
+                <div class="card-header flex justify-between items-center mb-5">
+                    <h2 class="text-lg font-semibold"><i class="fas fa-chart-line text-cyan-400 mr-2"></i> Performance Metrics</h2>
+                    <i class="fas fa-expand-arrows-alt text-gray-400 cursor-pointer text-sm"></i>
+                </div>
+                
+                <div class="performance-metrics space-y-4">
+                    <div class="metric flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="metric-info">
+                            <div class="metric-name text-gray-300">CPU Usage</div>
+                            <div class="metric-value text-cyan-400 font-mono">24.3%</div>
+                        </div>
+                        <div class="metric-status">
+                            <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-cyan-500 rounded-full" style="width: 24%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="metric-info">
+                            <div class="metric-name text-gray-300">Memory Usage</div>
+                            <div class="metric-value text-cyan-400 font-mono">1.2/4 GB</div>
+                        </div>
+                        <div class="metric-status">
+                            <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-cyan-500 rounded-full" style="width: 30%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="metric-info">
+                            <div class="metric-name text-gray-300">Network I/O</div>
+                            <div class="metric-value text-cyan-400 font-mono">84 Mbps</div>
+                        </div>
+                        <div class="metric-status">
+                            <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-cyan-500 rounded-full" style="width: 42%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="metric-info">
+                            <div class="metric-name text-gray-300">Buffer Health</div>
+                            <div class="metric-value text-cyan-400 font-mono">12.4s</div>
+                        </div>
+                        <div class="metric-status">
+                            <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-cyan-500 rounded-full" style="width: 62%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Video Player Card -->
+            <div class="metric-card rounded-xl p-5">
+                <div class="card-header flex justify-between items-center mb-5">
+                    <h2 class="text-lg font-semibold"><i class="fas fa-desktop text-cyan-400 mr-2"></i> Video Player</h2>
+                    <i class="fas fa-expand-arrows-alt text-gray-400 cursor-pointer text-sm"></i>
+                </div>
+                <div class="video-container">
+                    <video id="video" controls autoplay class="w-full rounded-lg bg-black"></video>
+                    <div class="quality-controls flex flex-wrap gap-2 mt-4 justify-center">
+                        <button class="quality-btn bg-cyan-600 px-3 py-1 rounded text-xs">Auto</button>
+                        <button class="quality-btn bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">1080p</button>
+                        <button class="quality-btn bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">720p</button>
+                        <button class="quality-btn bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">480p</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bandwidth Usage Card -->
+            <div class="metric-card rounded-xl p-5">
+                <div class="card-header flex justify-between items-center mb-5">
+                    <h2 class="text-lg font-semibold"><i class="fas fa-tachometer-alt text-cyan-400 mr-2"></i> Bandwidth Usage</h2>
+                    <i class="fas fa-expand-arrows-alt text-gray-400 cursor-pointer text-sm"></i>
+                </div>
+                
+                <div class="bandwidth-usage">
+                    <div class="usage-item mb-4">
+                        <div class="flex justify-between text-sm text-gray-400 mb-1">
+                            <span>1080p Stream</span>
+                            <span>4.2 Mbps</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-cyan-500 rounded-full" style="width: 70%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="usage-item mb-4">
+                        <div class="flex justify-between text-sm text-gray-400 mb-1">
+                            <span>720p Stream</span>
+                            <span>2.8 Mbps</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-cyan-400 rounded-full" style="width: 46%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="usage-item mb-4">
+                        <div class="flex justify-between text-sm text-gray-400 mb-1">
+                            <span>480p Stream</span>
+                            <span>1.5 Mbps</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-cyan-300 rounded-full" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="usage-item">
+                        <div class="flex justify-between text-sm text-gray-400 mb-1">
+                            <span>360p Stream</span>
+                            <span>0.8 Mbps</span>
+                        </div>
+                        <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-cyan-200 rounded-full" style="width: 13%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="dashboard.js"></script>
+</body>
+</html>

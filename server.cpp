@@ -4,6 +4,8 @@
 #include<boost/asio.hpp>
 #include<iostream>
 #include<fstream>
+#include<sstream>
+#include<string>
 #include <sys/wait.h>
 #include <sys/types.h>
 
@@ -14,6 +16,9 @@ namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 using tcp = net::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 																		
+string mime_type(string path);
+string read_file(const string& path);
+
 class Session : public enable_shared_from_this<Session> {
 	
 	tcp::socket socket_;
@@ -51,21 +56,24 @@ class Session : public enable_shared_from_this<Session> {
 
 		void handle_request()
 		{
+				
 				try{
 					
-					string target = req_.target().to_string();
+					string target = string(req_.target());
 
 					if(target == "/")
 					{
+						cout << "Entered the home route" << endl;
 						target = "/index.html";
 					}
 
 					if(target == "POST /upload")
 					{
-						handle_upload_request();
+						cout << "Coming soon" << endl;
+						//handle_upload_request();
 					}
 
-					full_path = "./www" + target;
+					string full_path = "./www" + target;
 
 					handle_regular_request(full_path);
 
@@ -80,6 +88,37 @@ class Session : public enable_shared_from_this<Session> {
 		void handle_regular_request(string full_path)
 		{
 			try{
+
+				if (req_.find(http::field::range) != req_.end()) {
+		    string range_header = string(req_[http::field::range]);
+    
+    if (range_header.compare(0,6 , "bytes=") == 0) {
+        string range_spec = range_header.substr(6);
+        size_t dash_pos = range_spec.find('-');
+        
+        if (dash_pos != string::npos) {
+            string start_str = range_spec.substr(0, dash_pos);
+            string end_str = range_spec.substr(dash_pos + 1);
+            
+            long long start_byte = -1;
+            long long end_byte = -1;
+            
+            if (!start_str.empty()) {
+                start_byte = stoll(start_str);
+            }
+
+            if (!end_str.empty()) {    
+                end_byte = stoll(end_str);
+            }
+            
+            cout << "Parsed range: start=" << start_byte << ", end=" << end_byte << endl;
+            
+            handle_range_request(full_path, start_byte, end_byte);
+            return; 
+        }
+    }
+}
+
 				auto res = make_shared<http::response<http::string_body>>();				
 				auto body = read_file(full_path);
 
@@ -106,6 +145,79 @@ class Session : public enable_shared_from_this<Session> {
 			}
 			
 		}
+		
+		void handle_range_request(string path , long long start , long long end)
+		{
+			ifstream file(path , ios::binary | ios::ate);
+			if(!file)
+			{
+				send_bad_response(http::status::not_found, "File Not Found");
+				return;
+			}
+
+			streamsize file_size = file.tellg();
+			file.seekg(0 , ios::beg);
+
+			 if (start < 0 && end >= 0) {
+        // Handle suffix range: bytes=-500 (last 500 bytes)
+        start = max(0LL, file_size - end);
+        end = file_size - 1;
+			 } 
+			 else if (start >= 0 && end < 0) {
+        // Handle range from start to end: bytes=1000-
+        end = file_size - 1;
+			 } 
+			 else if (start < 0 && end < 0) {
+        // Invalid case
+        send_bad_response(http::status::bad_request, "Invalid range format");
+        return;
+			}
+
+
+			if(start >= file_size || end >= file_size || start > end)
+			{
+				send_bad_response(http::status::range_not_satisfiable, "Requested Range Not Satisfiable");
+				return;
+			}
+
+			streamsize chunk_size = end - start + 1;
+			
+			file.seekg(start, ios::beg);
+			vector<char> buffer(chunk_size);
+			file.read(buffer.data(), chunk_size);
+    
+    // Check if read was successful
+			if (file.gcount() != chunk_size) {
+        send_bad_response(http::status::internal_server_error, 
+                         "Error reading file chunk");
+        return;
+			}
+    
+    // Create 206 Partial Content response
+    auto res = make_shared<http::response<http::string_body>>();
+    res->version(req_.version());
+    res->result(http::status::partial_content);
+    res->set(http::field::server, "Beast");
+    res->set(http::field::content_type, mime_type(path));
+    res->set(http::field::accept_ranges, "bytes");
+    res->set(http::field::content_range, 
+             "bytes " + to_string(start) + "-" + 
+             to_string(end) + "/" + to_string(file_size));
+    res->body() = string(buffer.data(), chunk_size);
+    res->prepare_payload();
+    
+    // Send the response
+    http::async_write(socket_, *res, 
+        [self = shared_from_this(), res](beast::error_code ec, size_t bytes_transferred) {
+            if (!ec) {
+                // Optionally keep connection alive for more requests
+                self->do_read();
+            } else {
+                self->socket_.shutdown(tcp::socket::shutdown_send, ec);
+            }
+        });
+
+	}
 
 		void send_bad_response(http::status status , string_view error_message )
 		{
@@ -146,7 +258,7 @@ string mime_type(string path)
 				{".ts","video/mp2t"},
     };
 
-		auto dot_position = path.substr(path.find_last_of('.'));
+		auto dot_position = path.find_last_of('.');
 		if(dot_position == string::npos)
 		{
 			return "application/octet-stream";
@@ -157,6 +269,7 @@ string mime_type(string path)
 		{
 			return it->second;
 		}
+		return "application/octet-stream";
 }
 
 
@@ -167,7 +280,10 @@ string read_file(const string& path)
 	{
 		throw runtime_error("File not found");
 	}
-	return string((istreambuf_iterator<char>file) , istreambuf_iterator<char>());
+	 return string(
+        (istreambuf_iterator<char>(file)), 
+        istreambuf_iterator<char>()          
+    );
 }
 
 int main()
