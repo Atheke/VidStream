@@ -42,7 +42,7 @@ curl http://localhost:8080/media/hls_output/master.m3u8
 
 ## Usage
 
-1. Place video content in `www/media/hls_output/` directory:  
+1. Place video content in `www/media/` directory:  
    - `master.m3u8` – HLS manifest file  
    - `master_*.ts` – Video chunk files  
 
