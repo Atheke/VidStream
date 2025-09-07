@@ -73,7 +73,7 @@ class Session : public enable_shared_from_this<Session> {
 						//handle_upload_request();
 					}
 
-					string full_path = "./www" + target;
+					string full_path = "../www" + target;
 
 					handle_regular_request(full_path);
 
