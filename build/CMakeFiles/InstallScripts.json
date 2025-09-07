@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/jonan/repos/C-media-server/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

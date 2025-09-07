@@ -1,0 +1,3 @@
+/home/jonan/repos/C-media-server/build/CMakeFiles/server.dir
+/home/jonan/repos/C-media-server/build/CMakeFiles/edit_cache.dir
+/home/jonan/repos/C-media-server/build/CMakeFiles/rebuild_cache.dir
